@@ -13,7 +13,8 @@
 
 
 
-@interface RootViewController () <BMKLocationServiceDelegate,BMKMapViewDelegate,BMKRouteSearchDelegate>
+@interface RootViewController () <BMKGeneralDelegate,BMKLocationServiceDelegate,BMKMapViewDelegate,BMKRouteSearchDelegate,BMKDistrictSearchDelegate>
+@property (nonatomic, strong) BMKMapManager *mapManager;
 @property (nonatomic, strong) BMKMapView *mapView ;
 @property (nonatomic, strong) BMKLocationService * locationService;
 
@@ -25,8 +26,13 @@
     
 @property (nonatomic, strong) BMKRouteSearch *routeSearcher;
 
-@property (nonatomic, strong)  BMKUserLocation *userLocationCurrent;
-@property (nonatomic, strong)  BMKUserLocation *userLocationPrevious;
+//@property (nonatomic, strong)  BMKUserLocation *userLocationCurrent;
+//@property (nonatomic, strong)  BMKUserLocation *userLocationPrevious;
+@property (nonatomic, strong)  CLLocation *locationCurrent;
+@property (nonatomic, strong)  CLLocation *locationPrevious;
+
+@property (nonatomic, strong) UIButton *buttonStart;
+@property (nonatomic, strong) UIButton *buttonFinish;
     
 @end
 
@@ -60,8 +66,29 @@
     
     self.locationModel = [[UserLocationsModel alloc] init];
     
+    self.buttonStart = [[UIButton alloc] initWithFrame:CGRectMake(0, 100, 36, 36)];
+    [self.view addSubview:self.buttonStart];
+    self.buttonStart.layer.cornerRadius = 18;
+    [self.buttonStart setTitle:@"开始" forState:UIControlStateNormal];
+    [self.buttonStart setBackgroundColor:[UIColor blueColor]];
+    self.buttonStart.titleLabel.font = [UIFont systemFontOfSize:10];
+    [self.buttonStart addTarget:self action:@selector(actionButton) forControlEvents:UIControlEventTouchDown];
+    
+    
     [self.locationModel traceStart];
     
+    
+    __weak typeof(self) _self = self;
+    self.locationModel.infoDisplay = ^(NSString *s){
+        [_self traceStepInfo:s];
+    };
+    
+    self.locationModel.traceInfoUse = ^(double totalDistance, double totalInterval, double averageSpeed, BOOL count, NSInteger countFrom, NSInteger countTo) {
+        [_self.infoView updateTraceInfo:[NSString stringWithFormat:@"总距:%.1lfm, 时间:%.1lfs, 均速:%.1lfkm/h",
+                                         totalDistance,
+                                         totalInterval,
+                                         averageSpeed]];
+    };
 }
 
 
@@ -95,34 +122,22 @@
 }
 
 
-
-- (void)didUpdateUserHeading:(BMKUserLocation *)userLocation
-{
-    
-}
-
-
 - (void)didUpdateBMKUserLocation:(BMKUserLocation *)userLocation
 {
-    [self.locationModel addUserLocation:userLocation];
+    //没有速度的时候, 自行计算速度.
+    double speed = [self.locationModel addUserLocation:userLocation];
     
     static NSInteger knumber = 0;
     knumber ++;
     
     CLLocationCoordinate2D coordinate = userLocation.location.coordinate;
-    NSLog(@"[%zd]经度:%lf,纬度:%lf,速度:%lf",knumber,coordinate.latitude,coordinate.longitude,
-          userLocation.location.speed);
+//    NSLog(@"[%zd]经度:%lf,纬度:%lf,速度:%lf",knumber,coordinate.latitude,coordinate.longitude,
+//          userLocation.location.speed);
     
-    [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"定位[%zd]:经度:%lf,纬度:%lf,速度:%lf",
+    [self traceStepInfo:[NSString stringWithFormat:@"定位[%zd]:经度:%lf,纬度:%lf,速度:%lf",
                                         self.locationModel.userLocations.count,
                                         coordinate.latitude,coordinate.longitude,
-                                        userLocation.location.speed]];
-    
-    
-    [self.infoView updateTraceInfo:[NSString stringWithFormat:@"总距:%.1lfm, 时间:%.1lfs,均速:%.1lfkm/h",
-                                    self.locationModel.totalDistance,
-                                    self.locationModel.totalInterval,
-                                    self.locationModel.averageSpeed]];
+                                        speed]];
     
 //    [BMKLocationService setLocationDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
 //    [BMKLocationService setLocationDistanceFilter:10.0];
@@ -140,11 +155,15 @@
         [_mapView setRegion:region animated:YES];
     });
     
-    self.userLocationPrevious = self.userLocationCurrent;
-    self.userLocationCurrent = userLocation;
+    self.locationPrevious = self.locationCurrent;
+    self.locationCurrent = [userLocation.location copy];
     
     //画轨迹线.
-    [self drawPolyLine];
+    if(self.locationPrevious) {
+        [self drawPolyLine];
+    }
+    
+    [self district];
 }
 
 
@@ -177,8 +196,8 @@
     self.routeSearcher = [[BMKRouteSearch alloc] init];
     self.routeSearcher.delegate = self;
     
-    CLLocationCoordinate2D from = self.userLocationPrevious.location.coordinate;
-    CLLocationCoordinate2D to = self.userLocationCurrent.location.coordinate;
+    CLLocationCoordinate2D from = self.locationPrevious.coordinate;
+    CLLocationCoordinate2D to = self.locationCurrent.coordinate;
     
     BMKPlanNode *startNode = [[BMKPlanNode alloc]init];
     startNode.pt = from;
@@ -189,20 +208,28 @@
     walkingRoutePlanOption.to = endNode;
     //结果于routeSearch的delegate - onGetWalkingRouteResult.
     if ([self.routeSearcher walkingSearch:walkingRoutePlanOption]) {
-        NSLog(@"路线查找成功");
-        self.infoLabel.text = [self.infoLabel.text stringByAppendingString:@"路线查找成功\n"];
-        [self.infoView appendTraceStepInfo:@"路线查找成功"];
+        [self traceStepInfo:@"路线查找成功"];
     }
     else {
-        NSLog(@"线路查找失败");
-        self.infoLabel.text = [self.infoLabel.text stringByAppendingString:@"路线查找失败\n"];
-        [self.infoView appendTraceStepInfo:@"路线查找失败"];
+        [self traceStepInfo:@"路线查找失败"];
     }
+}
+
+
+- (void)traceStepInfo:(NSString*)infoString
+{
+    NSLog(@"%@", infoString);
+    [self.infoView appendTraceStepInfo:infoString];
 }
 
 
 - (void)onGetWalkingRouteResult:(BMKRouteSearch *)searcher result:(BMKWalkingRouteResult *)result errorCode:(BMKSearchErrorCode)error
 {
+    if(error != BMK_SEARCH_NO_ERROR) {
+        [self traceStepInfo:[NSString stringWithFormat:@"onGetWalkingRouteResult error : %zd", error]];
+        return ;
+    }
+    
     BMKWalkingRouteLine *plan = (BMKWalkingRouteLine *)[result.routes objectAtIndex:0];
     int size = (int)[plan.steps count];
     int pointCount = 0;
@@ -221,12 +248,10 @@
         }
     }
     
-    NSLog(@"点的个数:(%d)",k);
-    self.infoLabel.text = [self.infoLabel.text stringByAppendingFormat:@"点的个数:(%d)\n", k];
-    [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"点的个数:(%d)\n", k]];
+    [self traceStepInfo:[NSString stringWithFormat:@"点的个数:(%d)", k]];
+    
     for(int i=0; i<k; i++) {
-        self.infoLabel.text = [self.infoLabel.text stringByAppendingFormat:@"x:%lf, y:%lf\n", points[i].x, points[i].y];
-        [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"x:%lf, y:%lf\n", points[i].x, points[i].y]];
+        [self traceStepInfo:[NSString stringWithFormat:@"x:%.1lf, y:%.1lf", points[i].x, points[i].y]];
     }
     
     BMKPolyline *polyLine = [BMKPolyline polylineWithPoints:points count:pointCount];
@@ -294,6 +319,58 @@
 
 - (void)testPolyLineDrawDirect
 {
+    
+}
+
+
+- (void)actionButton
+{
+    
+}
+
+
+- (void)district
+{
+    //初始化检索对象
+    BMKDistrictSearch *_districtSearch = [[BMKDistrictSearch alloc] init];
+    //设置delegate，用于接收检索结果
+    _districtSearch.delegate = self;
+    //构造行政区域检索信息类
+    BMKDistrictSearchOption *option = [[BMKDistrictSearchOption alloc] init];
+    option.city = @"深圳";
+    option.district = @"南山";
+    //发起检索
+    BOOL flag = [_districtSearch districtSearch:option];
+    if (flag) {
+        [self traceStepInfo:@"---district检索发送成功"];
+    } else {
+        [self traceStepInfo:@"---district检索发送失败"];
+    }
+}
+
+
+- (void)onGetDistrictResult:(BMKDistrictSearch *)searcher result:(BMKDistrictResult *)result errorCode:(BMKSearchErrorCode)error {
+    [self traceStepInfo:[NSString stringWithFormat:@"onGetDistrictResult error: %d", error]];
+    if (error == BMK_SEARCH_NO_ERROR) {
+        [self traceStepInfo:@"--- 判断区域 : PASS"];
+    }
+    else {
+        [self traceStepInfo:[NSString stringWithFormat:@"--- 判断区域 : FAILED. %d", error]];
+    }
+}
+
+
+- (void)didReceiveMemoryWarning {
+    [super didReceiveMemoryWarning];
+    // Dispose of any resources that can be recreated.
+}
+
+@end
+
+
+#if 0
+- (void)testPolyLineDrawDirect
+{
     CLLocationCoordinate2D startCoordinate;
     startCoordinate.latitude =22.568729;
     startCoordinate.longitude =113.911660;
@@ -315,17 +392,18 @@
     }
     
     delete [] tempPoints;
-    
-    
-    
-    
 }
 
 
-
-- (void)didReceiveMemoryWarning {
-    [super didReceiveMemoryWarning];
-    // Dispose of any resources that can be recreated.
+- (void)actionButton
+{
+    if([self.buttonStart.titleLabel.text isEqualToString:@"开始"]) {
+        [self.buttonStart setTitle:@"结束" forState:UIControlStateNormal];
+        [self traceStepInfo:@"开始纪录"];
+    }
+    else {
+        [self.buttonStart setTitle:@"开始" forState:UIControlStateNormal];
+        [self traceStepInfo:@"结束纪录"];
+    }
 }
-
-@end
+#endif

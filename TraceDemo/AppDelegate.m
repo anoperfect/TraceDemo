@@ -12,7 +12,7 @@
 
 
 
-@interface AppDelegate ()
+@interface AppDelegate () <BMKGeneralDelegate>
 {
     BMKMapManager *_mapManager;
 }
@@ -31,7 +31,7 @@
     [self.window makeKeyAndVisible];
     
     _mapManager = [[BMKMapManager alloc] init];
-    BOOL ret = [_mapManager start:@"kDwPj5WGGRBced936OGhBwDgxrXSD0UI" generalDelegate:nil];
+    BOOL ret = [_mapManager start:@"kDwPj5WGGRBced936OGhBwDgxrXSD0UI" generalDelegate:self];
     if (ret) {
         NSLog(@"map manager start OK.");
     }
@@ -63,5 +63,18 @@
 - (void)applicationWillTerminate:(UIApplication *)application {
     // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
 }
+
+
+- (void)onGetPermissionState:(int)iError
+{
+    NSLog(@"onGetPermissionState : %d", iError);
+}
+
+
+- (void)onGetNetworkState:(int)iError
+{
+    NSLog(@"onGetNetworkState : %d", iError);
+}
+
 
 @end

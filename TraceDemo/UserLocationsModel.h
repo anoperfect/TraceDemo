@@ -24,7 +24,10 @@
 @property (nonatomic, assign) NSInteger countFrom;
 @property (nonatomic, assign) NSInteger countTo;
 
-- (void)addUserLocation:(BMKUserLocation *)userLocation;
+@property (nonatomic, strong) void (^infoDisplay)(NSString*);
+@property (nonatomic, strong) void (^traceInfoUse)(double totalDistance, double totalInterval, double averageSpeed, BOOL count, NSInteger countFrom, NSInteger countTo);
+
+- (double)addUserLocation:(BMKUserLocation *)userLocation;
 - (void)traceStart;
 - (void)traceFinish;
 

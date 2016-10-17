@@ -22,28 +22,60 @@
 @implementation UserLocationsModel
 
 
-- (void)addUserLocation:(BMKUserLocation *)userLocation
+- (void)showInfo:(NSString*)s
 {
-    if(!self.userLocations) {
+    NSLog(@"%@", s);
+    if(self.infoDisplay) {
+        self.infoDisplay(s);
+    }
+}
+
+
+- (double)addUserLocation:(BMKUserLocation *)userLocation
+{
+    CLLocation *location = [userLocation.location copy];
+    
+    if(self.userLocations.count == 0) {
         self.userLocations = [[NSMutableArray alloc] init];
+        [self.userLocations addObject:location];
+        [self showInfo:[NSString stringWithFormat:@"第一次定位. [%p]%lf, %lf", location, location.coordinate.latitude, location.coordinate.longitude]];
+        return location.speed;
     }
     
-    [self.userLocations addObject:userLocation];
+    NSInteger count = self.userLocations.count + 1;
     
-    if(self.couting && self.userLocations.count > 1) {
-        BMKUserLocation *userLocationFrom = self.userLocations[self.userLocations.count - 2];
-        BMKUserLocation *userLocationTo = self.userLocations[self.userLocations.count - 1];
-        
-        CLLocationDistance distance = [userLocationFrom.location distanceFromLocation:userLocationTo.location];
-        NSLog(@"distance : %lf", distance);
-        
+    CLLocation *userLocationFrom = [self.userLocations lastObject];
+    NSLog(@"Prev : [%p]%lf, %lf", userLocationFrom, userLocationFrom.coordinate.latitude, userLocationFrom.coordinate.longitude);
+    NSLog(@"To : [%p]%lf, %lf", userLocation, location.coordinate.latitude, location.coordinate.longitude);
+    
+    CLLocationDistance distance = [userLocationFrom distanceFromLocation:userLocation.location];
+    NSTimeInterval dtime = [userLocation.location.timestamp timeIntervalSinceDate:userLocationFrom.timestamp];
+    double speed = userLocation.location.speed;
+    if(speed == -1) {
+        speed = distance / dtime * 3.6;
+        [self showInfo:[NSString stringWithFormat:@"[%zd]distance : %lf, interval : %lf, speed* : %lf", count, distance, dtime, speed]];
+    }
+    else {
+        [self showInfo:[NSString stringWithFormat:@"[%zd]distance : %lf, interval : %lf, speed : %lf", count, distance, dtime, userLocation.location.speed]];
+    }
+    
+    [self.userLocations addObject:location];
+    
+    if(self.couting) {
         self.totalDistance += distance;
-        
-        NSTimeInterval dtime = [userLocationTo.location.timestamp timeIntervalSinceDate:userLocationFrom.location.timestamp];
         self.totalInterval += dtime;
+        if(self.totalInterval > 1) {
+            self.averageSpeed = self.totalDistance / self.totalInterval * 3.6;
+        }
+        
+        if(self.traceInfoUse) {
+            self.traceInfoUse(self.totalDistance, self.totalInterval, self.averageSpeed, self.userLocations.count, self.countFrom, self.countTo);
+        }
+        
     }
     
     NSLog(@"---count : %zd", self.userLocations.count);
+    return speed;
 }
 
 
