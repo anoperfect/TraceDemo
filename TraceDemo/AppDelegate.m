@@ -8,8 +8,14 @@
 
 #import "AppDelegate.h"
 #import "RootViewController.h"
-@interface AppDelegate ()
+#import "PrefixHeader.pch" 
 
+
+
+@interface AppDelegate ()
+{
+    BMKMapManager *_mapManager;
+}
 @end
 
 @implementation AppDelegate
@@ -23,6 +29,15 @@
     self.window = [[UIWindow alloc] initWithFrame:[[UIScreen mainScreen] bounds]];
     self.window.rootViewController = nav;
     [self.window makeKeyAndVisible];
+    
+    _mapManager = [[BMKMapManager alloc] init];
+    BOOL ret = [_mapManager start:@"kDwPj5WGGRBced936OGhBwDgxrXSD0UI" generalDelegate:nil];
+    if (ret) {
+        NSLog(@"map manager start OK.");
+    }
+    else {
+        NSLog(@"map manager start failed.");
+    }
     
     return YES;
 }

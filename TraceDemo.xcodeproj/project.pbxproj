@@ -9,9 +9,11 @@
 /* Begin PBXBuildFile section */
 		B52AC9C41DB3DE2C00BB62ED /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9C31DB3DE2C00BB62ED /* main.m */; };
 		B52AC9C71DB3DE2C00BB62ED /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9C61DB3DE2C00BB62ED /* AppDelegate.m */; };
-		B52AC9CA1DB3DE2C00BB62ED /* RootViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9C91DB3DE2C00BB62ED /* RootViewController.m */; };
+		B52AC9CA1DB3DE2C00BB62ED /* RootViewController.mm in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9C91DB3DE2C00BB62ED /* RootViewController.mm */; };
 		B52AC9CF1DB3DE2C00BB62ED /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = B52AC9CE1DB3DE2C00BB62ED /* Assets.xcassets */; };
 		B52AC9D21DB3DE2C00BB62ED /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B52AC9D01DB3DE2C00BB62ED /* LaunchScreen.storyboard */; };
+		B52AC9DC1DB46E8000BB62ED /* UserLocationsModel.m in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9DB1DB46E8000BB62ED /* UserLocationsModel.m */; };
+		B52AC9DF1DB46EA600BB62ED /* UserLocationsView.m in Sources */ = {isa = PBXBuildFile; fileRef = B52AC9DE1DB46EA600BB62ED /* UserLocationsView.m */; };
 		D40CCA68720A5FA16A04B933 /* Pods_TraceDemo.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A109A9EA13B89070705767C7 /* Pods_TraceDemo.framework */; };
 /* End PBXBuildFile section */
 
@@ -24,10 +26,15 @@
 		B52AC9C51DB3DE2C00BB62ED /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
 		B52AC9C61DB3DE2C00BB62ED /* AppDelegate.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = AppDelegate.m; sourceTree = "<group>"; };
 		B52AC9C81DB3DE2C00BB62ED /* RootViewController.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RootViewController.h; sourceTree = "<group>"; };
-		B52AC9C91DB3DE2C00BB62ED /* RootViewController.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = RootViewController.m; sourceTree = "<group>"; };
+		B52AC9C91DB3DE2C00BB62ED /* RootViewController.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = RootViewController.mm; sourceTree = "<group>"; };
 		B52AC9CE1DB3DE2C00BB62ED /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		B52AC9D11DB3DE2C00BB62ED /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		B52AC9D31DB3DE2C00BB62ED /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		B52AC9D91DB3E1D900BB62ED /* PrefixHeader.pch */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = PrefixHeader.pch; sourceTree = "<group>"; };
+		B52AC9DA1DB46E8000BB62ED /* UserLocationsModel.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserLocationsModel.h; sourceTree = "<group>"; };
+		B52AC9DB1DB46E8000BB62ED /* UserLocationsModel.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserLocationsModel.m; sourceTree = "<group>"; };
+		B52AC9DD1DB46EA600BB62ED /* UserLocationsView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserLocationsView.h; sourceTree = "<group>"; };
+		B52AC9DE1DB46EA600BB62ED /* UserLocationsView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserLocationsView.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,9 +90,14 @@
 				B52AC9C51DB3DE2C00BB62ED /* AppDelegate.h */,
 				B52AC9C61DB3DE2C00BB62ED /* AppDelegate.m */,
 				B52AC9C81DB3DE2C00BB62ED /* RootViewController.h */,
-				B52AC9C91DB3DE2C00BB62ED /* RootViewController.m */,
+				B52AC9C91DB3DE2C00BB62ED /* RootViewController.mm */,
+				B52AC9DA1DB46E8000BB62ED /* UserLocationsModel.h */,
+				B52AC9DB1DB46E8000BB62ED /* UserLocationsModel.m */,
+				B52AC9DD1DB46EA600BB62ED /* UserLocationsView.h */,
+				B52AC9DE1DB46EA600BB62ED /* UserLocationsView.m */,
 				B52AC9CE1DB3DE2C00BB62ED /* Assets.xcassets */,
 				B52AC9D01DB3DE2C00BB62ED /* LaunchScreen.storyboard */,
+				B52AC9D91DB3E1D900BB62ED /* PrefixHeader.pch */,
 				B52AC9D31DB3DE2C00BB62ED /* Info.plist */,
 				B52AC9C21DB3DE2C00BB62ED /* Supporting Files */,
 			);
@@ -221,9 +233,11 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				B52AC9CA1DB3DE2C00BB62ED /* RootViewController.m in Sources */,
+				B52AC9CA1DB3DE2C00BB62ED /* RootViewController.mm in Sources */,
 				B52AC9C71DB3DE2C00BB62ED /* AppDelegate.m in Sources */,
 				B52AC9C41DB3DE2C00BB62ED /* main.m in Sources */,
+				B52AC9DF1DB46EA600BB62ED /* UserLocationsView.m in Sources */,
+				B52AC9DC1DB46E8000BB62ED /* UserLocationsModel.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
