@@ -42,6 +42,8 @@
         NSTimeInterval dtime = [userLocationTo.location.timestamp timeIntervalSinceDate:userLocationFrom.location.timestamp];
         self.totalInterval += dtime;
     }
+    
+    NSLog(@"---count : %zd", self.userLocations.count);
 }
 
 

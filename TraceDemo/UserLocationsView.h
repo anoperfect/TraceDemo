@@ -10,4 +10,11 @@
 
 @interface UserLocationsView : UIView
 
+
+
+
+- (void)updateTraceInfo:(NSString*)infoString;
+- (void)appendTraceStepInfo:(NSString*)stepInfoString;
+
+
 @end

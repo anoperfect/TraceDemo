@@ -8,14 +8,20 @@
 
 #import "RootViewController.h"
 #import "PrefixHeader.pch"
-
-
+#import "UserLocationsModel.h"
+#import "UserLocationsView.h"
 
 
 
 @interface RootViewController () <BMKLocationServiceDelegate,BMKMapViewDelegate,BMKRouteSearchDelegate>
 @property (nonatomic, strong) BMKMapView *mapView ;
 @property (nonatomic, strong) BMKLocationService * locationService;
+
+@property (nonatomic, strong) UITextView *infoLabel;
+@property (nonatomic, strong) UserLocationsView *infoView;
+@property (nonatomic, strong) UserLocationsModel *locationModel;
+
+
     
 @property (nonatomic, strong) BMKRouteSearch *routeSearcher;
 
@@ -33,10 +39,28 @@
     self.title = @"Root";
     self.view.backgroundColor = [UIColor purpleColor];
     
-    self.mapView = [[BMKMapView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height - 100)];
+    self.mapView = [[BMKMapView alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, self.view.bounds.size.height - 180)];
     [self.view addSubview:self.mapView];
     
     [self initBMLocationService];
+    
+    [self testPolyLine];
+    //[self testPolyLineDrawDirect];
+    
+    self.infoLabel = [[UITextView alloc] initWithFrame:CGRectMake(0, self.view.bounds.size.height - 180, self.view.bounds.size.width, 180)];
+    self.infoLabel.editable = NO;
+//    [self.view addSubview:self.infoLabel];
+    
+    
+    self.infoView = [[UserLocationsView alloc] initWithFrame:CGRectMake(0, self.view.bounds.size.height - 180, self.view.bounds.size.width, 180)];
+    [self.view addSubview:self.infoView];
+    
+    [self.infoView updateTraceInfo:@"未开始追踪"];
+    [self.infoView appendTraceStepInfo:@"程序开始"];
+    
+    self.locationModel = [[UserLocationsModel alloc] init];
+    
+    [self.locationModel traceStart];
     
 }
 
@@ -80,9 +104,25 @@
 
 - (void)didUpdateBMKUserLocation:(BMKUserLocation *)userLocation
 {
+    [self.locationModel addUserLocation:userLocation];
+    
+    static NSInteger knumber = 0;
+    knumber ++;
+    
     CLLocationCoordinate2D coordinate = userLocation.location.coordinate;
-    NSLog(@"经度:%lf,纬度:%lf,速度:%lf",coordinate.latitude,coordinate.longitude,
+    NSLog(@"[%zd]经度:%lf,纬度:%lf,速度:%lf",knumber,coordinate.latitude,coordinate.longitude,
           userLocation.location.speed);
+    
+    [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"定位[%zd]:经度:%lf,纬度:%lf,速度:%lf",
+                                        self.locationModel.userLocations.count,
+                                        coordinate.latitude,coordinate.longitude,
+                                        userLocation.location.speed]];
+    
+    
+    [self.infoView updateTraceInfo:[NSString stringWithFormat:@"总距:%.1lfm, 时间:%.1lfs,均速:%.1lfkm/h",
+                                    self.locationModel.totalDistance,
+                                    self.locationModel.totalInterval,
+                                    self.locationModel.averageSpeed]];
     
 //    [BMKLocationService setLocationDesiredAccuracy:kCLLocationAccuracyNearestTenMeters];
 //    [BMKLocationService setLocationDistanceFilter:10.0];
@@ -95,8 +135,8 @@
     dispatch_once(&once, ^{
         BMKCoordinateRegion region ;//表示范围的结构体
         region.center = coordinate;//中心点
-        region.span.latitudeDelta = 0.0001;//经度范围（设置为0.1表示显示范围为0.2的纬度范围）
-        region.span.longitudeDelta = 0.001;//纬度范围
+        region.span.latitudeDelta = 0.0036;//经度范围（设置为0.1表示显示范围为0.2的纬度范围）
+        region.span.longitudeDelta = 0.0036;//纬度范围
         [_mapView setRegion:region animated:YES];
     });
     
@@ -133,7 +173,7 @@
 
 
 - (void)drawPolyLineByWalkingRoutePlan
-{
+{//return;
     self.routeSearcher = [[BMKRouteSearch alloc] init];
     self.routeSearcher.delegate = self;
     
@@ -150,9 +190,13 @@
     //结果于routeSearch的delegate - onGetWalkingRouteResult.
     if ([self.routeSearcher walkingSearch:walkingRoutePlanOption]) {
         NSLog(@"路线查找成功");
+        self.infoLabel.text = [self.infoLabel.text stringByAppendingString:@"路线查找成功\n"];
+        [self.infoView appendTraceStepInfo:@"路线查找成功"];
     }
     else {
         NSLog(@"线路查找失败");
+        self.infoLabel.text = [self.infoLabel.text stringByAppendingString:@"路线查找失败\n"];
+        [self.infoView appendTraceStepInfo:@"路线查找失败"];
     }
 }
 
@@ -178,6 +222,12 @@
     }
     
     NSLog(@"点的个数:(%d)",k);
+    self.infoLabel.text = [self.infoLabel.text stringByAppendingFormat:@"点的个数:(%d)\n", k];
+    [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"点的个数:(%d)\n", k]];
+    for(int i=0; i<k; i++) {
+        self.infoLabel.text = [self.infoLabel.text stringByAppendingFormat:@"x:%lf, y:%lf\n", points[i].x, points[i].y];
+        [self.infoView appendTraceStepInfo:[NSString stringWithFormat:@"x:%lf, y:%lf\n", points[i].x, points[i].y]];
+    }
     
     BMKPolyline *polyLine = [BMKPolyline polylineWithPoints:points count:pointCount];
     [_mapView addOverlay:polyLine];
@@ -185,7 +235,91 @@
 
 
 
+- (void)testPolyLine
+{
+    CLLocationCoordinate2D startCoordinate;
+    startCoordinate.latitude =22.568729;
+    startCoordinate.longitude =113.911660;
+    
+    CLLocationCoordinate2D endCoordnate;
+    endCoordnate.latitude =22.567778;
+    endCoordnate.longitude =113.912578;
+    
+    BMKRouteSearch *_searcher = [[BMKRouteSearch alloc]init];
+    _searcher.delegate = self;
+    
+    
+    BMKPlanNode *startNode = [[BMKPlanNode alloc]init];
+    startNode.pt = startCoordinate;
+    BMKPlanNode *endNode = [[BMKPlanNode alloc]init];
+    endNode.pt = endCoordnate;
+    
+    BMKDrivingRoutePlanOption * drivingRoutePlanOption = [[BMKDrivingRoutePlanOption alloc]init];
+    drivingRoutePlanOption.from = startNode;
+    drivingRoutePlanOption.to = endNode;
+    
+    if ([_searcher drivingSearch:drivingRoutePlanOption]) {
+        NSLog(@"测试线路路线查找成功");
+    }
+    else {
+        NSLog(@"测试线路路线查找失败");
+    }
+}
 
+
+- (void)onGetDrivingRouteResult:(BMKRouteSearch *)searcher result:(BMKDrivingRouteResult *)result errorCode:(BMKSearchErrorCode)error
+{
+    BMKDrivingRouteLine *plan = (BMKDrivingRouteLine *)[result.routes objectAtIndex:0];
+    int size = (int)[plan.steps count];
+    int pointCount = 0;
+    for (int i = 0; i< size; i++) {
+        BMKDrivingStep *step = [plan.steps objectAtIndex:i];
+        pointCount += step.pointsCount;
+    }
+    BMKMapPoint *points = new BMKMapPoint[pointCount];
+    int k = 0;
+    for (int i = 0; i< size; i++) {
+        BMKDrivingStep *step = [plan.steps objectAtIndex:i];
+        for (int j= 0; j<step.pointsCount; j++) {
+            points[k].x = step.points[j].x;
+            points[k].y = step.points[j].y;
+            k++;
+        }
+    }
+    NSLog(@"测试点的个数:(%d)",k);
+    BMKPolyline *polyLine = [BMKPolyline polylineWithPoints:points count:pointCount];
+    [_mapView addOverlay:polyLine];
+}
+
+
+- (void)testPolyLineDrawDirect
+{
+    CLLocationCoordinate2D startCoordinate;
+    startCoordinate.latitude =22.568729;
+    startCoordinate.longitude =113.911660;
+    
+    CLLocationCoordinate2D endCoordnate;
+    endCoordnate.latitude =22.567778;
+    endCoordnate.longitude =113.912578;
+    
+    BMKMapPoint *tempPoints = new BMKMapPoint[2];
+    tempPoints[0] = BMKMapPointForCoordinate(startCoordinate);
+    tempPoints[1] = BMKMapPointForCoordinate(endCoordnate);
+    
+    NSLog(@"0 - x:%lf, y:%lf", tempPoints[0].x, tempPoints[0].y);
+    NSLog(@"1 - x:%lf, y:%lf", tempPoints[1].x, tempPoints[1].y);
+    
+    BMKPolyline *polyLine = [BMKPolyline polylineWithPoints:tempPoints count:2];
+    if(polyLine) {
+        [self.mapView addOverlay:polyLine];
+    }
+    
+    delete [] tempPoints;
+    
+    
+    
+    
+}
 
 
 
